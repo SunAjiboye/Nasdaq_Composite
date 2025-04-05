@@ -1,0 +1,45 @@
+---
+title: "back_my_strategy_Nasdaq_100.2."
+author: "Sun Ajiboye"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(tidyr)
+library(lubridate)
+
+```
+
+
+```{r}
+load_and_aggregate <- function(nasdaq_100) {
+  raw_data <- read.csv(nasdaq_100)
+  
+  if (!"index_ts" %in% colnames(raw_data)) {
+    stop("Input data must contain 'index_ts' column")
+  }
+  print(raw_data)
+  
+  daily_data <- raw_data %>%
+    separate(index_ts, into = c("ticker", "date", "metric", "value"), sep = ",") %>%
+    mutate(date = as.Date(date),
+           value = as.numeric(value)) %>%
+    filter(metric == "close") %>%
+    select(date, value) %>%
+    arrange(date)
+  
+  monthly_data <- daily_data %>%
+    mutate(year_month = floor_date(date, "month")) %>%
+    group_by(year_month) %>%
+    summarise(monthly_close = last(value)) %>%
+    ungroup()
+  
+  return(list(daily = daily_data, monthly = monthly_data))
+}
+```
+
+
